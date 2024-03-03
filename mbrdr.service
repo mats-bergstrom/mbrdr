@@ -6,7 +6,7 @@ Requires=mosquitto.service
 After=mosquitto.service
 
 [Service]
-ExecStart=/usr/local/bin/mbrdr /usr/local/etc/mbrdr.cfg
+ExecStart=/usr/local/bin/mbrdr -v /usr/local/etc/mbrdr.cfg
 StandardOutput=journal+console
 Restart=always
 RestartSec=3

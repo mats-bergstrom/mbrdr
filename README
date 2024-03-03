@@ -3,7 +3,7 @@ mbrdr -- Modbus Reader
 Reads data from a Huawei SUN2000 Solar Inverter and publishes the data
 using MQTT.
 
-These are braindead!
+These devices are braindead!
 
 The on-line fora are full of suggestions on how to read out data with
 confidence but no real good infomration seems to be available.  The

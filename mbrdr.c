@@ -9,8 +9,8 @@
  * Created On      : Thu Feb 29 20:01:00 2024
  * 
  * Last Modified By: Mats Bergstrom
- * Last Modified On: Sun Mar  3 18:29:38 2024
- * Update Count    : 69
+ * Last Modified On: Sun Mar  3 19:30:17 2024
+ * Update Count    : 77
  * Status          : $State$
  * 
  * $Locker$
@@ -253,12 +253,12 @@ typedef struct {
 param_t tab[] =
     {
      /* Always have status first */
-     { 32089, 1,    1, conv_U1, "%02x",  "sun/status"		},
+     { 32089, 1,    1, conv_U1, "%02x",  "sun/status"		}, /*must be 0*/
+     { 32087, 1,   10, conv_F,  "%.1lf", "sun/internalTemp"	}, /*must be 1*/
      { 32080, 2, 1000, conv_F,  "%.3lf", "sun/activePower"	},
      { 32064, 2, 1000, conv_F,  "%.3lf", "sun/inputPower"	},
      { 32106, 2,  100, conv_F,  "%.2lf", "sun/accEnergy"	},
      { 32114, 2,  100, conv_F,  "%.2lf", "sun/dailyEnergy"	},
-     { 32087, 1,   10, conv_F,  "%.1lf", "sun/internalTemp"	},
 #if 0
      { 32086, 1,  100, conv_F,  "%.2lf", "sun/efficiency"	},
      { 32091, 2,    1, conv_U2, "%ld",   "sun/startupTime"	},
@@ -352,14 +352,14 @@ mbrdr_read()
 
 	if ( opt_m ) {			/* Fake reading if in non-modbus mode */
 	    nr = 1;
-	    A[0] = '\0';
-	    A[1] = '\0';
-	    A[2] = '\0';
-	    A[3] = '\0';
-	    A[4] = '\0';
-	    A[5] = '\0';
-	    A[6] = '\0';
-	    A[7] = '\0';
+	    A[0] = 0;
+	    A[1] = 0;
+	    A[2] = 0;
+	    A[3] = 0;
+	    A[4] = 0;
+	    A[5] = 0;
+	    A[6] = 0;
+	    A[7] = 0;
 	}
 	else {
 	    nr = modbus_read_registers(mb, tab[i].addr, tab[i].len, A );
@@ -403,6 +403,20 @@ mbrdr_read()
 		break;
 	    }
 	    topic_val[i][ MAX_TOPIC_LEN-1 ] = '\0';
+
+	    /* Invalidate internal temperature if status os 0xa000 */
+	    /* It's not read out, a value 0 is returned no matter. */
+	    if ( status == 0xa000 ) {
+		topic_val[1][0] = '\0';
+	    }
+
+	    if ( opt_v ) {
+		printf("%s=%s [", tab[i].topic, topic_val[i]);
+		for ( p = 0; p < tab[i].len; ++p ) {
+		    printf("%04x",A[p]);
+		}
+		printf("]\n");
+	    }
 	}
 
 	/* Sleep delay before next read */
@@ -528,7 +542,7 @@ mq_publish()
 	    printf(" %s %s\n", tab[i].topic, topic_val[i] );
 	}
 
-	if ( !opt_n && i ) {
+	if ( !opt_n && i && (l >0) ) {
 	    status = mosquitto_publish(mqc, 0,
 				       tab[i].topic,
 				       l,
