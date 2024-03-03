@@ -1,0 +1,48 @@
+mbrdr -- Modbus Reader
+
+Reads data from a Huawei SUN2000 Solar Inverter and publishes the data
+using MQTT.
+
+These are braindead!
+
+The on-line fora are full of suggestions on how to read out data with
+confidence but no real good infomration seems to be available.  The
+Huawei responces indicate they do not have any ida why reading data
+using modbus sometimes works, sometimes not.
+
+After experimening, I managed to cook up an algorithm that seems to
+work (so far).  In pseudo code it looks like:
+
+1    Establish a TCP connection.
+2    Sleep 5 s.
+3    For each parameter to read
+4    	 read a parameter
+5		send a modbus package
+6		read the responce with a timeout of 5 s.
+7	 sleep 2 s before reading the the next parameter
+
+I.E. the modbus slave (renamed server some time ago) cannot cope with
+incoming requests too quickly.
+
+1: It needs a delay of several seconds after a TCP connection is
+   established bef ore the first request is received, too quick and it
+   does not respond at all, 5 s seems to have a very log failure rate.
+2: The slave also needs a very long time before it responds, using a 5 s
+   time-out gives a very low failure rate.
+3: Requests must be separated by a long duration.  2 s gives a very low
+   failure rate.
+
+Note that ANY fault in the timing or using the wrong modbus id results
+in no responce at all (time-out).
+
+To provide an inverter in the 1500-2000 USD range with this kind
+timing issues is really weird.
+
+I used libmodbus for the modbus communication.  It works great but as
+I prefer static linking for this I added a few scripts to build and
+create a static library to link with.
+
+
+A description of the modbus registers for my inverter (SUN2000-10KTL-M0)
+can be found in:
+https://www.photovoltaikforum.com/core/attachment/180219-solar-inverter-modbus-interface-definitions-v3-0-pdf/

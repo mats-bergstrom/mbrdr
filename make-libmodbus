@@ -1,0 +1,10 @@
+#! /bin/sh
+if [ ! -d libmodbus ] ; then
+    git clone https://github.com/stephane/libmodbus.git
+fi
+cd libmodbus
+./autogen.sh
+./configure
+make
+cd ..
+ar rcv libmodbus.a libmodbus/src/.libs/*.o

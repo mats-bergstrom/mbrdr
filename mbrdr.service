@@ -1,0 +1,15 @@
+# Service file for mbrdr
+
+[Unit]
+Description=mbrdr service
+Requires=mosquitto.service
+After=mosquitto.service
+
+[Service]
+ExecStart=/usr/local/bin/mbrdr /usr/local/etc/mbrdr.cfg
+StandardOutput=journal+console
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
