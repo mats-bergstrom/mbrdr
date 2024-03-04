@@ -8,7 +8,7 @@ This program is intended to be running on a Raspberry Pi.
 Regarding the Huawei SSUN2000, the on-line fora are full of
 suggestions on how to read out data with confidence but no real good
 infomration seems to be available.  The Huawei responces indicate they
-do not have any ida why reading data using modbus sometimes works,
+do not have any idea why reading data using modbus sometimes works,
 sometimes not.
 
 After experimening, I managed to cook up an algorithm that seems to
