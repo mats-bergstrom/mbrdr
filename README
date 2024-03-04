@@ -3,12 +3,13 @@ mbrdr -- Modbus Reader
 Reads data from a Huawei SUN2000 Solar Inverter and publishes the data
 using MQTT.
 
-These devices are braindead!
+This program is intended to be running on a Raspberry Pi.
 
-The on-line fora are full of suggestions on how to read out data with
-confidence but no real good infomration seems to be available.  The
-Huawei responces indicate they do not have any ida why reading data
-using modbus sometimes works, sometimes not.
+Regarding the Huawei SSUN2000, the on-line fora are full of
+suggestions on how to read out data with confidence but no real good
+infomration seems to be available.  The Huawei responces indicate they
+do not have any ida why reading data using modbus sometimes works,
+sometimes not.
 
 After experimening, I managed to cook up an algorithm that seems to
 work (so far).  In pseudo code it looks like:
@@ -35,8 +36,13 @@ incoming requests too quickly.
 Note that ANY fault in the timing or using the wrong modbus id results
 in no responce at all (time-out).
 
+Also, if the device status is "Idle" (state code=0xa000) some
+parameters are not red out correctly, e.g. the internal temperature
+and on top of this, reading too many times will fail.  To avoid that
+the program closes the TCP connection and reopens it.
+
 To provide an inverter in the 1500-2000 USD range with this kind
-timing issues is really weird.
+timing issues and other quirks is really weird.
 
 I used libmodbus for the modbus communication.  It works great but as
 I prefer static linking for this I added a few scripts to build and
@@ -46,3 +52,51 @@ create a static library to link with.
 A description of the modbus registers for my inverter (SUN2000-10KTL-M0)
 can be found in:
 https://www.photovoltaikforum.com/core/attachment/180219-solar-inverter-modbus-interface-definitions-v3-0-pdf/
+
+To build:
+	git clone https://github.com/mats-bergstrom/mbrdr.git
+	cd mbrdr
+	make-cfgf
+	make-libmodbus
+	make
+
+To control:
+	sudo systemctl start mbrdr
+	sudo systemctl stop mbrdr
+	sudo systemctl status mbrdr -n 100
+
+
+Options:
+	-v	Verbose mode.
+	-n	No-active mode. Does not send mqtt topics.
+	-m	No-modbus mode. Does not read modbus.
+
+The config file:
+
+
+
+Adapt to a differetnt modbus device.
+The parameters to read out and publish are in a hard-coded table (see below)
+add/remove/change according to your needs.
+
+typedef struct {
+    uint16_t	addr;			/* modbus address to read */
+    uint16_t	len;			/* no of words to read */
+    uint32_t	gain;			/* gain of data */
+    conv_t	conv;			/* data type and conversion */
+    const char* fmt;			/* format conversion */
+    const char*	topic;			/* topic of data */
+} param_t;
+
+param_t tab[] =
+    {
+     /* Always have status first */
+     { 32089, 1,    1, conv_U1, "%02x",  "sun/status"		}, /*must be 0*/
+     { 32087, 1,   10, conv_F,  "%.1lf", "sun/internalTemp"	}, /*must be 1*/
+     { 32080, 2, 1000, conv_F,  "%.3lf", "sun/activePower"	},
+     { 32064, 2, 1000, conv_F,  "%.3lf", "sun/inputPower"	},
+     { 32106, 2,  100, conv_F,  "%.2lf", "sun/accEnergy"	},
+     { 32114, 2,  100, conv_F,  "%.2lf", "sun/dailyEnergy"	},
+     
+     { 0,0,0,0,0,0}			/* Terminator */
+};

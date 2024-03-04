@@ -9,16 +9,16 @@
 ## Created On      : Thu Feb 29 19:47:26 2024
 ## 
 ## Last Modified By: Mats Bergstrom
-## Last Modified On: Sun Mar  3 18:15:15 2024
-## Update Count    : 9
+## Last Modified On: Mon Mar  4 12:33:04 2024
+## Update Count    : 10
 ###############################################################################
 
 
 CC = gcc
 CFLAGS = -Wall -pedantic-errors  -g
-CPPFLAGS = -Ilibmodbus/src -I../cfgf
+CPPFLAGS = -Ilibmodbus/src -Icfgf
 LDLIBS = -lmosquitto -lmodbus -lcfgf
-LDFLAGS = -L.  -L../cfgf
+LDFLAGS = -L.  -Lcfgf
 
 IBIN	= /usr/local/bin
 ETCDIR	= /usr/local/etc
@@ -39,6 +39,7 @@ mbrdr.o: mbrdr.c
 
 clean:
 	cd libmodbus && make clean
+	cd cfgf && make clean
 	rm -f libmodbus.a *.o mbrdr *~ *.log .*~
 
 uninstall:

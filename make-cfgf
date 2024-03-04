@@ -1,0 +1,8 @@
+#! /bin/sh
+if [ ! -d cfgf ] ; then
+    git clone https://github.com/mats-bergstrom/cfgf.git
+fi
+cd cfgf
+make
+
+

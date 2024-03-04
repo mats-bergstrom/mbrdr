@@ -9,8 +9,8 @@
  * Created On      : Thu Feb 29 20:01:00 2024
  * 
  * Last Modified By: Mats Bergstrom
- * Last Modified On: Sun Mar  3 19:30:17 2024
- * Update Count    : 77
+ * Last Modified On: Mon Mar  4 19:10:27 2024
+ * Update Count    : 88
  * Status          : $State$
  * 
  * $Locker$
@@ -50,6 +50,8 @@ int opt_m = 0;				/* NoModbus, do not connect to modbus */
 /* Config file handling */
 /* mqtt   <broker> <port> <id> */
 /* modbus <addr>   <port> <id> */
+/* delays <connect-delay> <read-timeout> <write-delay> */
+/* intervals <ACTIVE-interval> <IDLE-interval> <STANDBY-interval> */
 
 char* mqtt_broker = 0;
 int   mqtt_port;
@@ -259,12 +261,7 @@ param_t tab[] =
      { 32064, 2, 1000, conv_F,  "%.3lf", "sun/inputPower"	},
      { 32106, 2,  100, conv_F,  "%.2lf", "sun/accEnergy"	},
      { 32114, 2,  100, conv_F,  "%.2lf", "sun/dailyEnergy"	},
-#if 0
-     { 32086, 1,  100, conv_F,  "%.2lf", "sun/efficiency"	},
-     { 32091, 2,    1, conv_U2, "%ld",   "sun/startupTime"	},
-     { 32093, 2,    1, conv_U2, "%ld",   "sun/shutdownTime"	},
-     { 40000, 2,    1, conv_U2, "%ld",   "sun/systemTime"	},
-#endif
+
      { 0,0,0,0,0,0}			/* Terminator */
 };
 
@@ -366,9 +363,14 @@ mbrdr_read()
 	}
 	
 	if ( nr < 1  ) {
+	    /* If read fails, bomb after the third time... */
+	    static unsigned err_ctr = 0;
 	    fprintf( stderr, "modbus_read_failed: %s (nr=%d) ",
 		     modbus_strerror(errno), nr);
 	    fprintf( stderr, " i=%d %s\n",i,tab[i].topic);
+	    ++err_ctr;
+	    if ( err_ctr > 3 )
+		exit( EXIT_FAILURE );
 	}
 	else {
 	    int p = 0;
@@ -376,7 +378,7 @@ mbrdr_read()
 	    double fval = 0;
 	    
 
-	    /* Unpack up to a 32bit number */
+	    /* Unpack to a 32bit number */
 	    p = 0;
 	    uval = A[p]; p++;
 	    while ( p < tab[i].len ) {
@@ -388,7 +390,15 @@ mbrdr_read()
 	    /* If i == 0 (status), save status */
 	    if ( (i == 0) )
 		status = uval;
-		
+
+#if 1
+	    /* Enable this if you get read errors... */
+	    /* Quick exit if we are in idle state. */
+	    if ( (i == 0) && (uval == 0xa000) ) {
+		break;
+	    }
+#endif
+	    
 	    switch ( tab[i].conv ) {
 	    case conv_F:
 		fval = uval;
@@ -404,12 +414,6 @@ mbrdr_read()
 	    }
 	    topic_val[i][ MAX_TOPIC_LEN-1 ] = '\0';
 
-	    /* Invalidate internal temperature if status os 0xa000 */
-	    /* It's not read out, a value 0 is returned no matter. */
-	    if ( status == 0xa000 ) {
-		topic_val[1][0] = '\0';
-	    }
-
 	    if ( opt_v ) {
 		printf("%s=%s [", tab[i].topic, topic_val[i]);
 		for ( p = 0; p < tab[i].len; ++p ) {
@@ -422,7 +426,13 @@ mbrdr_read()
 	/* Sleep delay before next read */
 	sleep(modbus_write_delay);
     }
-    
+
+    /* Invalidate internal temperature if status os 0xa000 */
+    /* It's not read out, a value 0 is returned no matter. */
+    if ( status == 0xa000 ) {
+	topic_val[1][0] = '\0';
+    }
+
     if ( opt_v )
 	printf("Done Reading...\n");
 
@@ -514,7 +524,15 @@ mbrdr_loop()
 	    fprintf(stderr,"BAD next state.  Aborting!\n");
 	    exit( EXIT_FAILURE );
 	}
+	sun_state = nxt_state;
 
+	/* Reset connection if in idle... */
+	if ( sun_state == ssIDLE ) {
+	    modbus_close(mb);
+	    modbus_free(mb);
+	    mb = 0;
+	}
+	
 	add_time_sec( &ts_sleep, &ts_start, sleep_interval );
 	my_sleep( &ts_sleep );
     }
