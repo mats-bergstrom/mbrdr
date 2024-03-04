@@ -73,9 +73,28 @@ Options:
 
 The config file:
 
+	# Configuration for mbrdr
+	#		broker address	port	mqtt id
+	mqtt		127.0.0.1	1883	mbrdr-test
+	#
+	# modbus data	slave address	port	slave id
+	modbus		127.0.0.1	502	1
+	#
+	# Time outs (s)	connect	read	write
+	delays		5	5	2
+	#
+	# Intervals between reads in a given state (s)
+	#		ACTIVE	IDLE	STANDBY
+	intervals	120	900	120
+
+The mqtt and modbus lines should be self explanatory.
+
+The delays line sets the delay after a connect, the read time out and
+delay between TCP writes to read a parameter.
+The intervals are the intervals between the modbus device is polled
+for data when it is in the ACTIVE, IDLE, and STANDBY states.
 
 
-Adapt to a differetnt modbus device.
 The parameters to read out and publish are in a hard-coded table (see below)
 add/remove/change according to your needs.
 
