@@ -9,8 +9,8 @@
  * Created On      : Thu Feb 29 20:01:00 2024
  * 
  * Last Modified By: Mats Bergstrom
- * Last Modified On: Tue Mar  5 06:51:12 2024
- * Update Count    : 90
+ * Last Modified On: Tue Mar  5 07:16:24 2024
+ * Update Count    : 91
  * Status          : $State$
  * 
  * $Locker$
@@ -479,29 +479,12 @@ mbrdr_loop()
 	/* Always sleep here */
 	sleep( modbus_connect_delay  );
 
-	/* Read */
-	switch ( sun_state ) {
-	case ssSTANDBY:
-	    if ( opt_v )
-		printf("State=STANDBY\n");
-	    nxt_state = mbrdr_read();
-	    break;
-	case ssACTIVE:
-	    if ( opt_v )
-		printf("State=ACTIVE\n");
-	    nxt_state = mbrdr_read();
-	    break;
-	case ssIDLE:
-	    if ( opt_v )
-		printf("State=IDLE\n");
-	    nxt_state = mbrdr_read();
-	    break;
-	default:
-	    fprintf(stderr,"BAD state.  Aborting!\n");
-	    exit( EXIT_FAILURE );
-	}
+	if ( opt_v )
+	    printf("State=%s\n",ssName[sun_state]);
 
-	mq_publish();		/* Publish all topics */
+	nxt_state = mbrdr_read();	/* Read data */
+	
+	mq_publish();			/* Publish all topics */
 
 	switch ( nxt_state ) {
 	case ssSTANDBY:
