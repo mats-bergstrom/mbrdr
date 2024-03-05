@@ -9,8 +9,8 @@
  * Created On      : Thu Feb 29 20:01:00 2024
  * 
  * Last Modified By: Mats Bergstrom
- * Last Modified On: Mon Mar  4 19:10:27 2024
- * Update Count    : 88
+ * Last Modified On: Tue Mar  5 06:51:12 2024
+ * Update Count    : 90
  * Status          : $State$
  * 
  * $Locker$
@@ -286,6 +286,7 @@ typedef enum {
 	      ssIDLE	= 2,
 	      ssMAX	= 3
 } sunState_t;
+const char* ssName[] = {"STANDBY", "ACTIVE", "IDLE", "MAX" };
 
 modbus_t* mb = 0;			/* The modbus instance */
 
@@ -523,6 +524,10 @@ mbrdr_loop()
 	default:
 	    fprintf(stderr,"BAD next state.  Aborting!\n");
 	    exit( EXIT_FAILURE );
+	}
+	if ( nxt_state != sun_state ) {
+	    printf("State change: %s -> %s\n",
+		   ssName[sun_state], ssName[nxt_state]);
 	}
 	sun_state = nxt_state;
 
